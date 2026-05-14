@@ -1,0 +1,12 @@
+currency_code,currency_name,usd_rate
+USD,US Dollar,1.000
+EUR,Euro,1.080
+GBP,British Pound,1.260
+JPY,Japanese Yen,0.0067
+CNY,Chinese Yuan,0.140
+BRL,Brazilian Real,0.200
+INR,Indian Rupee,0.012
+RUB,Russian Ruble,0.011
+CAD,Canadian Dollar,0.740
+ARS,Argentine Peso,0.0011
+SAR,Saudi Riyal,0.270

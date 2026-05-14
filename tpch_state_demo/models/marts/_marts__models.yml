@@ -1,0 +1,228 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: '{{ doc("fct_orders") }}'
+    config:
+      tags: ['finance', 'orders']
+      meta:
+        owner: '{{ var("finance_owner") }}'
+        team: finance
+    columns:
+      - name: order_key
+        description: Primary key.
+        tests:
+          - unique
+          - not_null
+      - name: order_date
+        tests:
+          - not_null
+      - name: status_code
+        description: '{{ doc("order_status_code") }}'
+        tests:
+          - accepted_values:
+              values: ['O', 'F', 'P']
+      - name: sales_region
+        description: Internal go-to-market region from the nation_region_overrides seed.
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: Sum of extended_price across all line items on this order.
+        tests:
+          - not_negative
+      - name: net_revenue
+        description: Gross revenue after discounts.
+        tests:
+          - not_negative
+      - name: net_revenue_after_tax
+        description: Net revenue after discounts and taxes.
+
+  - name: fct_order_items
+    description: >
+      Line-item level fact table. Most granular mart in the project — one row
+      per order line. Used for part- and supplier-level analysis. Incremental
+      on order_date.
+    config:
+      tags: ['finance', 'orders']
+      meta:
+        owner: '{{ var("finance_owner") }}'
+        team: finance
+    columns:
+      - name: order_item_key
+        description: Surrogate key (order_key + line_number).
+        tests:
+          - unique
+          - not_null
+      - name: order_key
+        tests:
+          - not_null
+      - name: sales_region
+        tests:
+          - not_null
+      - name: discounted_price
+        description: extended_price * (1 - discount_percentage).
+        tests:
+          - not_negative
+      - name: net_price
+        description: discounted_price * (1 + tax_rate).
+        tests:
+          - not_negative
+
+  - name: fct_returns
+    description: >
+      Returned line items (return_flag = 'R'). Used by customer service and
+      finance to track returns volume by part, supplier, and sales region.
+      Incremental on order_date.
+    config:
+      tags: ['finance', 'returns']
+      meta:
+        owner: '{{ var("finance_owner") }}'
+        team: customer_service
+    columns:
+      - name: order_item_key
+        tests:
+          - unique
+          - not_null
+      - name: order_key
+        tests:
+          - not_null
+      - name: returned_gross_amount
+        tests:
+          - not_negative
+
+  - name: dim_customers
+    description: >
+      Customer dimension with denormalized nation, region, sales_region (from
+      the nation_region_overrides seed), and a resolved market_segment_label
+      from the get_market_segment_label macro.
+    config:
+      tags: ['dimensions']
+      meta:
+        owner: '{{ var("data_team_owner") }}'
+        team: data
+    columns:
+      - name: customer_key
+        description: Primary key.
+        tests:
+          - unique
+          - not_null
+      - name: market_segment_label
+        description: Pretty label resolved via the market_segment_labels seed.
+      - name: sales_region
+        tests:
+          - not_null
+
+  - name: dim_suppliers
+    description: >
+      Supplier dimension with denormalized nation, region, and sales_region.
+      One row per supplier.
+    config:
+      tags: ['dimensions']
+      meta:
+        owner: '{{ var("data_team_owner") }}'
+        team: data
+    columns:
+      - name: supplier_key
+        description: Primary key.
+        tests:
+          - unique
+          - not_null
+      - name: sales_region
+        tests:
+          - not_null
+
+  - name: dim_parts
+    description: >
+      Part dimension joined with aggregated supplier metrics (count, supply
+      cost stats, total available quantity, avg margin).
+    config:
+      tags: ['dimensions']
+      meta:
+        owner: '{{ var("data_team_owner") }}'
+        team: data
+    columns:
+      - name: part_key
+        tests:
+          - unique
+          - not_null
+      - name: supplier_count
+        tests:
+          - not_null
+          - not_negative
+
+  - name: dim_dates
+    description: >
+      Date dimension built from a generated date_spine. Independent of the
+      TPC-H sources — does NOT rebuild in a state-aware run unless its own
+      SQL or the date_spine variables change.
+    config:
+      tags: ['dimensions', 'reference']
+      meta:
+        owner: '{{ var("data_team_owner") }}'
+        team: data
+    columns:
+      - name: date_key
+        tests:
+          - unique
+          - not_null
+      - name: year_number
+        tests:
+          - not_null
+
+  - name: agg_revenue_by_nation
+    description: >
+      Monthly revenue aggregated by customer nation. The terminal node of one
+      of two long DAG chains in the project — useful for demonstrating the
+      full state-aware cascade in run logs.
+    config:
+      tags: ['finance', 'revenue']
+      meta:
+        owner: '{{ var("finance_owner") }}'
+        team: finance
+    columns:
+      - name: nation_name
+        tests:
+          - not_null
+      - name: order_year
+        tests:
+          - not_null
+      - name: order_month
+        tests:
+          - not_null
+      - name: gross_revenue
+        description: Sum of extended_price for orders in this nation-month.
+        tests:
+          - not_negative
+      - name: net_revenue
+        description: Gross revenue after discounts.
+        tests:
+          - not_negative
+
+  - name: agg_revenue_by_sales_region
+    description: >
+      Monthly revenue aggregated by internal sales_region (from the
+      nation_region_overrides seed). Sits at the end of the longest DAG branch
+      rooted at the seed — editing the seed cascades to this model.
+    config:
+      tags: ['finance', 'revenue']
+      meta:
+        owner: '{{ var("finance_owner") }}'
+        team: finance
+    columns:
+      - name: sales_region
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+      - name: order_year
+        tests:
+          - not_null
+      - name: order_month
+        tests:
+          - not_null
+      - name: gross_revenue
+        tests:
+          - not_negative
+      - name: net_revenue
+        tests:
+          - not_negative

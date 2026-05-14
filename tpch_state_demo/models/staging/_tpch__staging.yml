@@ -1,0 +1,115 @@
+version: 2
+
+models:
+  - name: stg_tpch__customers
+    description: Cleaned and renamed customer records from the TPC-H source.
+    columns:
+      - name: customer_key
+        description: Primary key for customer.
+        tests:
+          - unique
+          - not_null
+      - name: market_segment
+        description: Customer market segment (e.g. AUTOMOBILE, BUILDING, FURNITURE).
+        tests:
+          - not_null
+
+  - name: stg_tpch__orders
+    description: Cleaned and renamed order header records.
+    columns:
+      - name: order_key
+        description: Primary key for orders.
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: Foreign key to stg_tpch__customers.
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_tpch__customers')
+              field: customer_key
+      - name: status_code
+        description: "Order status: O (open), F (fulfilled), P (partial)."
+        tests:
+          - accepted_values:
+              values: ['O', 'F', 'P']
+
+  - name: stg_tpch__line_items
+    description: >
+      Cleaned and renamed line item records. Each row is one line on one order.
+      This is the most granular fact in the TPC-H schema.
+    columns:
+      - name: order_key
+        description: Foreign key to stg_tpch__orders.
+        tests:
+          - not_null
+      - name: line_number
+        description: Line position within the order (1-indexed).
+        tests:
+          - not_null
+      - name: return_flag
+        description: "Return status: R (returned), A (accepted), N (not returned)."
+        tests:
+          - accepted_values:
+              values: ['R', 'A', 'N']
+
+  - name: stg_tpch__suppliers
+    description: Cleaned and renamed supplier master records.
+    columns:
+      - name: supplier_key
+        description: Primary key for supplier.
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_tpch__parts
+    description: Cleaned and renamed part (product) master records.
+    columns:
+      - name: part_key
+        description: Primary key for part.
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_tpch__part_suppliers
+    description: >
+      Part-supplier relationship records. Each row represents one supplier's
+      ability to supply a given part, with cost and available quantity.
+    columns:
+      - name: part_key
+        description: Foreign key to stg_tpch__parts.
+        tests:
+          - not_null
+      - name: supplier_key
+        description: Foreign key to stg_tpch__suppliers.
+        tests:
+          - not_null
+
+  - name: stg_tpch__nations
+    description: Nation (country) reference data.
+    columns:
+      - name: nation_key
+        description: Primary key for nation.
+        tests:
+          - unique
+          - not_null
+      - name: nation_name
+        description: Country name (e.g. FRANCE, UNITED STATES).
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_tpch__regions
+    description: Region reference data. Five regions cover all nations in TPC-H.
+    columns:
+      - name: region_key
+        description: Primary key for region.
+        tests:
+          - unique
+          - not_null
+      - name: region_name
+        description: Region name (e.g. EUROPE, AMERICA, ASIA).
+        tests:
+          - unique
+          - not_null

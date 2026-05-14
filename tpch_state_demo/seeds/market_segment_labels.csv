@@ -1,0 +1,6 @@
+market_segment,display_label,industry_group,priority_tier
+AUTOMOBILE,Automobile,Industrial,2
+BUILDING,Building & Construction,Industrial,3
+FURNITURE,Furniture,Consumer,4
+HOUSEHOLD,Household Goods,Consumer,4
+MACHINERY,Heavy Machinery,Industrial,1

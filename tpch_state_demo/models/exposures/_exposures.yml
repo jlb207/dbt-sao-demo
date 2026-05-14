@@ -1,0 +1,67 @@
+version: 2
+
+exposures:
+
+  - name: finance_executive_dashboard
+    label: Finance — Executive Revenue Dashboard
+    type: dashboard
+    maturity: high
+    url: https://bi.internal.example.com/dashboards/finance-exec
+    description: >
+      Top-line revenue dashboard reviewed by the CFO every Monday. Pulls from
+      agg_revenue_by_nation and agg_revenue_by_sales_region. When either model
+      is rebuilt by a state-aware run, this exposure shows up as "downstream"
+      in the dbt platform lineage.
+    depends_on:
+      - ref('agg_revenue_by_nation')
+      - ref('agg_revenue_by_sales_region')
+      - ref('fct_orders')
+    owner:
+      name: Finance Data Team
+      email: '{{ var("finance_owner") }}'
+
+  - name: ops_returns_alert
+    label: Operations — Returns Volume Alert
+    type: application
+    maturity: medium
+    url: https://ops.internal.example.com/alerts/returns
+    description: >
+      Hourly check on fct_returns. Fires a Slack alert to #ops-returns when
+      daily returned net amount exceeds the rolling 14-day average by 25%.
+    depends_on:
+      - ref('fct_returns')
+      - ref('dim_parts')
+    owner:
+      name: Operations Engineering
+      email: ops-eng@example.com
+
+  - name: customer_churn_model
+    label: ML — Customer Churn Prediction
+    type: ml
+    maturity: low
+    url: https://ml.internal.example.com/models/customer-churn
+    description: >
+      Trains weekly on dim_customers + fct_orders. State-aware reruns of either
+      table flag the model as needing retraining in our MLOps tracker.
+    depends_on:
+      - ref('dim_customers')
+      - ref('fct_orders')
+    owner:
+      name: Data Science
+      email: ds@example.com
+
+  - name: supplier_scorecard
+    label: Procurement — Supplier Scorecard
+    type: analysis
+    maturity: medium
+    url: https://bi.internal.example.com/dashboards/supplier-scorecard
+    description: >
+      Procurement-facing scorecard combining supplier dimension data with
+      returns and revenue. Used to negotiate quarterly contract renewals.
+    depends_on:
+      - ref('dim_suppliers')
+      - ref('dim_parts')
+      - ref('fct_returns')
+    owner:
+      name: Procurement Analytics
+      email: procurement-analytics@example.com

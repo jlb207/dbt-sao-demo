@@ -1,0 +1,63 @@
+version: 2
+
+seeds:
+  - name: nation_region_overrides
+    description: >
+      Manual override mapping from TPC-H nation names to the "go-to-market"
+      sales region used by the finance team. Editing this seed (e.g. moving
+      a country from EMEA to APAC) cascades a state-aware rebuild through
+      every downstream mart that joins to nation.
+    config:
+      column_types:
+        nation_name: varchar(64)
+        display_name: varchar(64)
+        sales_region: varchar(32)
+    columns:
+      - name: nation_name
+        description: Joins to stg_tpch__nations.nation_name (uppercase).
+        tests:
+          - unique
+          - not_null
+      - name: sales_region
+        description: Internal go-to-market region. Differs from the TPC-H region.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+
+  - name: fx_rates
+    description: Static reference rates for converting local currency to USD.
+    config:
+      column_types:
+        currency_code: varchar(3)
+        currency_name: varchar(64)
+        usd_rate: numeric(12,6)
+    columns:
+      - name: currency_code
+        tests:
+          - unique
+          - not_null
+      - name: usd_rate
+        tests:
+          - not_null
+          - not_negative
+
+  - name: market_segment_labels
+    description: Display labels and tiers for the TPC-H market_segment values.
+    config:
+      column_types:
+        market_segment: varchar(32)
+        display_label: varchar(64)
+        industry_group: varchar(32)
+        priority_tier: int
+    columns:
+      - name: market_segment
+        tests:
+          - unique
+          - not_null
+      - name: priority_tier
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4]
+              quote: false

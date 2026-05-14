@@ -1,0 +1,29 @@
+version: 2
+
+snapshots:
+  - name: snp_tpch__customers
+    description: >
+      SCD type 2 snapshot of stg_tpch__customers. Captures changes to
+      account_balance, market_segment, and customer_address. dbt-managed
+      validity windows via dbt_valid_from / dbt_valid_to.
+    columns:
+      - name: customer_key
+        tests:
+          - not_null
+      - name: dbt_scd_id
+        tests:
+          - unique
+          - not_null
+
+  - name: snp_tpch__suppliers
+    description: >
+      SCD type 2 snapshot of stg_tpch__suppliers. Captures changes to
+      account_balance and supplier_address.
+    columns:
+      - name: supplier_key
+        tests:
+          - not_null
+      - name: dbt_scd_id
+        tests:
+          - unique
+          - not_null

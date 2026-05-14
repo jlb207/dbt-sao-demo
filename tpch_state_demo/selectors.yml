@@ -1,0 +1,59 @@
+selectors:
+
+  - name: state_changed
+    description: >
+      Everything modified vs. the deferred-to artifact, plus all downstream
+      models, seeds, snapshots, exposures, and tests. This is the selector
+      used by the State-Aware dbt platform job.
+    default: false
+    definition:
+      union:
+        - method: state
+          value: modified
+          parents: false
+          children: true
+          children_depth: null
+
+  - name: finance_only
+    description: All models tagged 'finance' plus their parents.
+    definition:
+      union:
+        - method: tag
+          value: finance
+          parents: true
+        - exclude:
+            - method: tag
+              value: deprecated
+
+  - name: marts_and_downstream
+    description: Mart layer plus any exposures or tests downstream.
+    definition:
+      union:
+        - method: fqn
+          value: tpch_state_demo.marts
+          children: true
+
+  - name: ci_slim
+    description: >
+      Lightweight CI selector. Skips snapshots and large incremental marts on
+      pull requests where only staging / intermediate / dim models changed.
+    definition:
+      union:
+        - method: state
+          value: modified
+          children: true
+        - exclude:
+            - method: resource_type
+              value: snapshot
+            - method: tag
+              value: heavy
+
+  - name: nightly_full_refresh
+    description: All models that need to be fully rebuilt nightly.
+    definition:
+      union:
+        - method: tag
+          value: finance
+          parents: true
+        - method: tag
+          value: dimensions

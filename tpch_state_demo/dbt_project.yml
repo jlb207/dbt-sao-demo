@@ -1,0 +1,74 @@
+name: 'tpch_state_demo'
+version: '1.0.0'
+config-version: 2
+
+profile: 'tpch_state_demo'
+
+model-paths:    ["models"]
+test-paths:     ["tests"]
+seed-paths:     ["seeds"]
+macro-paths:    ["macros"]
+snapshot-paths: ["snapshots"]
+analysis-paths: ["analyses"]
+docs-paths:     ["models/_docs"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+  - "logs"
+
+vars:
+  # Date dimension range
+  date_spine_start: '1992-01-01'
+  date_spine_end:   '2000-01-01'
+
+  # Ownership metadata (referenced from model meta blocks)
+  finance_owner:   finance-data@example.com
+  data_team_owner: data-platform@example.com
+
+  # Currency reporting default
+  reporting_currency: USD
+
+on-run-end:
+  - "{{ log_run_metadata() }}"
+
+models:
+  tpch_state_demo:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +materialized: view
+      +schema: staging
+      +tags: ['staging']
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+      +tags: ['intermediate']
+    marts:
+      +materialized: table
+      +schema: marts
+      fct_orders:
+        +materialized: incremental
+      fct_order_items:
+        +materialized: incremental
+      fct_returns:
+        +materialized: incremental
+      agg_revenue_by_nation:
+        +materialized: incremental
+      agg_revenue_by_sales_region:
+        +materialized: incremental
+
+seeds:
+  tpch_state_demo:
+    +schema: seeds
+    +quote_columns: false
+
+snapshots:
+  tpch_state_demo:
+    +target_schema: snapshots
+
+tests:
+  +store_failures: true
+  +severity: warn

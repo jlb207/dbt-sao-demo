@@ -1,0 +1,126 @@
+version: 2
+
+sources:
+  - name: tpch
+    description: >
+      TPC-H benchmark dataset loaded as Redshift sample data.
+      Schema is 'tpch' within your Redshift database.
+    database: dev
+    schema: tpch
+    # Source freshness: TPC-H sample data is static, so these thresholds are
+    # illustrative. In a real project the warn_after / error_after values would
+    # match the upstream loader SLA. dbt source freshness runs in its own job
+    # in the dbt platform and is independent of model state.
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 72, period: hour}
+
+    tables:
+      - name: customer
+        description: Customer master data with market segment and nation reference.
+        columns:
+          - name: c_custkey
+            description: Primary key for customer.
+            tests:
+              - unique
+              - not_null
+          - name: c_name
+            description: Customer name.
+            tests:
+              - not_null
+          - name: c_nationkey
+            description: Foreign key to nation.
+            tests:
+              - not_null
+
+      - name: orders
+        description: Order header records. Each row is one order placed by a customer.
+        loaded_at_field: o_orderdate
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 168, period: hour}
+          filter: o_orderdate >= '1990-01-01'
+        columns:
+          - name: o_orderkey
+            description: Primary key for orders.
+            tests:
+              - unique
+              - not_null
+          - name: o_custkey
+            description: Foreign key to customer.
+            tests:
+              - not_null
+          - name: o_orderstatus
+            description: '{{ doc("order_status_code") }}'
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['O', 'F', 'P']
+
+      - name: lineitem
+        description: >
+          Line item detail for each order. The most granular fact table in TPC-H.
+          Each order can have multiple line items.
+        loaded_at_field: l_shipdate
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 168, period: hour}
+        columns:
+          - name: l_orderkey
+            description: Foreign key to orders.
+            tests:
+              - not_null
+          - name: l_linenumber
+            description: Line number within the order (1-indexed).
+            tests:
+              - not_null
+
+      - name: supplier
+        description: Supplier master data.
+        columns:
+          - name: s_suppkey
+            description: Primary key for supplier.
+            tests:
+              - unique
+              - not_null
+
+      - name: part
+        description: Part (product) master data.
+        columns:
+          - name: p_partkey
+            description: Primary key for part.
+            tests:
+              - unique
+              - not_null
+
+      - name: partsupp
+        description: >
+          Part-supplier relationship table. Records which suppliers can supply
+          which parts, at what cost and quantity.
+        columns:
+          - name: ps_partkey
+            description: Foreign key to part.
+            tests:
+              - not_null
+          - name: ps_suppkey
+            description: Foreign key to supplier.
+            tests:
+              - not_null
+
+      - name: nation
+        description: Nation (country) reference table.
+        columns:
+          - name: n_nationkey
+            description: Primary key for nation.
+            tests:
+              - unique
+              - not_null
+
+      - name: region
+        description: Region reference table. Five regions covering all nations.
+        columns:
+          - name: r_regionkey
+            description: Primary key for region.
+            tests:
+              - unique
+              - not_null
