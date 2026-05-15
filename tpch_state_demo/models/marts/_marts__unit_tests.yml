@@ -8,6 +8,9 @@ unit_tests:
       net_revenue, and net_revenue_after_tax are summed correctly and that
       the order-level attributes pass through unchanged.
     model: fct_orders
+    overrides:
+      macros:
+        is_incremental: false
     given:
       - input: ref('int_orders_enriched')
         rows:
@@ -25,6 +28,9 @@ unit_tests:
       Three line items: one returned, two accepted. Only the returned row
       should appear in fct_returns.
     model: fct_returns
+    overrides:
+      macros:
+        is_incremental: false
     given:
       - input: ref('int_orders_enriched')
         rows:
