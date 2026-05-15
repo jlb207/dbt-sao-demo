@@ -19,10 +19,10 @@ models:
           - not_null
       - name: status_code
         description: '{{ doc("order_status_code") }}'
-        tests:
-          # - accepted_values:
-          #     arguments:
-          #       values: ['O', 'F', 'P']
+        # tests:
+        #   - accepted_values:
+        #       arguments:
+        #         values: ['O', 'F', 'P']
       - name: sales_region
         description: Internal go-to-market region from the nation_region_overrides seed.
         tests:
