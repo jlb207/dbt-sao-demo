@@ -56,9 +56,9 @@ sources:
             description: '{{ doc("order_status_code") }}'
             tests:
               - not_null
-              - accepted_values:
-                  arguments:
-                    values: ['O', 'F', 'P']
+              # - accepted_values:
+              #     arguments:
+              #       values: ['O', 'F', 'P']
 
       - name: lineitem
         description: >

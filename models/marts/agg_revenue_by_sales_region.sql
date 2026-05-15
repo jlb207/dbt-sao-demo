@@ -34,9 +34,9 @@ with order_items as (
     from {{ ref('fct_order_items') }}
 
     {% if is_incremental() %}
-        where order_date >= dateadd(
-            'month', -1,
-            date_trunc('month', (select max(order_date) from {{ this }}))
+        where order_date >= (
+            select dateadd('month', -1, date_trunc('month', max(order_date)))
+            from {{ this }}
         )
     {% endif %}
 
