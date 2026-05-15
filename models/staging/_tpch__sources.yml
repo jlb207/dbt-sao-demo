@@ -5,7 +5,7 @@ sources:
     description: >
       TPC-H benchmark dataset loaded as Redshift sample data.
       Schema is 'tpch' within your Redshift database.
-    database: dev
+    database: sample_data_dev
     schema: tpch
     # Source freshness: TPC-H sample data is static, so these thresholds are
     # illustrative. In a real project the warn_after / error_after values would
