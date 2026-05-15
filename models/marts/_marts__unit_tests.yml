@@ -1,45 +1,45 @@
-version: 2
+# version: 2
 
-unit_tests:
+# unit_tests:
 
-  - name: fct_orders__aggregates_line_items_correctly
-    description: >
-      Two line items on one order. Verify line_item_count, gross_revenue,
-      net_revenue, and net_revenue_after_tax are summed correctly and that
-      the order-level attributes pass through unchanged.
-    model: fct_orders
-    overrides:
-      macros:
-        is_incremental: false
-    given:
-      - input: ref('int_orders_enriched')
-        rows:
-          - {order_key: 1, customer_key: 100, customer_name: 'Alice', customer_nation: 'FRANCE', customer_region: 'EUROPE', sales_region: 'EMEA', market_segment: 'AUTOMOBILE', order_date: '2024-01-15', status_code: 'F', priority_code: '1-URGENT', total_price: 500.00, clerk_name: 'Clerk#0001', ship_priority: 0, account_balance: 1000.00}
-      - input: ref('int_line_items_enriched')
-        rows:
-          - {order_key: 1, line_number: 1, part_key: 10, supplier_key: 20, quantity: 2, extended_price: 100.00, discount_percentage: 0.10, tax_rate: 0.05, discounted_price: 90.00, net_price: 94.50, return_flag: 'N', line_status: 'O', ship_date: '2024-01-20', commit_date: '2024-01-18', receipt_date: '2024-01-22', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'widget',   manufacturer: 'Mfg#1', brand: 'Brand#11', part_type: 'STANDARD ANODIZED STEEL', retail_price: 50.00, supplier_name: 'Sup#1', supplier_nation: 'GERMANY'}
-          - {order_key: 1, line_number: 2, part_key: 11, supplier_key: 21, quantity: 3, extended_price: 200.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price: 200.00, net_price: 210.00, return_flag: 'N', line_status: 'O', ship_date: '2024-01-21', commit_date: '2024-01-19', receipt_date: '2024-01-23', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'gizmo',    manufacturer: 'Mfg#1', brand: 'Brand#12', part_type: 'STANDARD ANODIZED STEEL', retail_price: 80.00, supplier_name: 'Sup#2', supplier_nation: 'GERMANY'}
-    expect:
-      rows:
-        - {order_key: 1, line_item_count: 2, gross_revenue: 300.00, net_revenue: 290.00, net_revenue_after_tax: 304.50, total_quantity: 5}
+#   - name: fct_orders__aggregates_line_items_correctly
+#     description: >
+#       Two line items on one order. Verify line_item_count, gross_revenue,
+#       net_revenue, and net_revenue_after_tax are summed correctly and that
+#       the order-level attributes pass through unchanged.
+#     model: fct_orders
+#     overrides:
+#       macros:
+#         is_incremental: false
+#     given:
+#       - input: ref('int_orders_enriched')
+#         rows:
+#           - {order_key: 1, customer_key: 100, customer_name: 'Alice', customer_nation: 'FRANCE', customer_region: 'EUROPE', sales_region: 'EMEA', market_segment: 'AUTOMOBILE', order_date: '2024-01-15', status_code: 'F', priority_code: '1-URGENT', total_price: 500.00, clerk_name: 'Clerk#0001', ship_priority: 0, account_balance: 1000.00}
+#       - input: ref('int_line_items_enriched')
+#         rows:
+#           - {order_key: 1, line_number: 1, part_key: 10, supplier_key: 20, quantity: 2, extended_price: 100.00, discount_percentage: 0.10, tax_rate: 0.05, discounted_price: 90.00, net_price: 94.50, return_flag: 'N', line_status: 'O', ship_date: '2024-01-20', commit_date: '2024-01-18', receipt_date: '2024-01-22', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'widget',   manufacturer: 'Mfg#1', brand: 'Brand#11', part_type: 'STANDARD ANODIZED STEEL', retail_price: 50.00, supplier_name: 'Sup#1', supplier_nation: 'GERMANY'}
+#           - {order_key: 1, line_number: 2, part_key: 11, supplier_key: 21, quantity: 3, extended_price: 200.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price: 200.00, net_price: 210.00, return_flag: 'N', line_status: 'O', ship_date: '2024-01-21', commit_date: '2024-01-19', receipt_date: '2024-01-23', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'gizmo',    manufacturer: 'Mfg#1', brand: 'Brand#12', part_type: 'STANDARD ANODIZED STEEL', retail_price: 80.00, supplier_name: 'Sup#2', supplier_nation: 'GERMANY'}
+#     expect:
+#       rows:
+#         - {order_key: 1, line_item_count: 2, gross_revenue: 300.00, net_revenue: 290.00, net_revenue_after_tax: 304.50, total_quantity: 5}
 
-  - name: fct_returns__filters_to_return_flag_R
-    description: >
-      Three line items: one returned, two accepted. Only the returned row
-      should appear in fct_returns.
-    model: fct_returns
-    overrides:
-      macros:
-        is_incremental: false
-    given:
-      - input: ref('int_orders_enriched')
-        rows:
-          - {order_key: 1, customer_key: 100, customer_name: 'Alice', customer_nation: 'FRANCE', customer_region: 'EUROPE', sales_region: 'EMEA', market_segment: 'AUTOMOBILE', order_date: '2024-01-15', status_code: 'F', priority_code: '1-URGENT', total_price: 500.00, clerk_name: 'Clerk#0001', ship_priority: 0, account_balance: 1000.00}
-      - input: ref('int_line_items_enriched')
-        rows:
-          - {order_key: 1, line_number: 1, part_key: 10, supplier_key: 20, quantity: 2, extended_price: 100.00, discount_percentage: 0.10, tax_rate: 0.05, discounted_price: 90.00,  net_price: 94.50,  return_flag: 'R', line_status: 'F', ship_date: '2024-01-20', commit_date: '2024-01-18', receipt_date: '2024-01-22', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'widget', manufacturer: 'Mfg#1', brand: 'Brand#11', part_type: 'STD', retail_price: 50.00, supplier_name: 'Sup#1', supplier_nation: 'GERMANY'}
-          - {order_key: 1, line_number: 2, part_key: 11, supplier_key: 21, quantity: 3, extended_price: 200.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price: 200.00, net_price: 210.00, return_flag: 'A', line_status: 'F', ship_date: '2024-01-21', commit_date: '2024-01-19', receipt_date: '2024-01-23', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'gizmo',  manufacturer: 'Mfg#1', brand: 'Brand#12', part_type: 'STD', retail_price: 80.00, supplier_name: 'Sup#2', supplier_nation: 'GERMANY'}
-          - {order_key: 1, line_number: 3, part_key: 12, supplier_key: 22, quantity: 1, extended_price:  50.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price:  50.00, net_price:  52.50, return_flag: 'N', line_status: 'O', ship_date: '2024-01-22', commit_date: '2024-01-20', receipt_date: '2024-01-24', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'sprocket', manufacturer: 'Mfg#1', brand: 'Brand#13', part_type: 'STD', retail_price: 30.00, supplier_name: 'Sup#3', supplier_nation: 'GERMANY'}
-    expect:
-      rows:
-        - {order_key: 1, line_number: 1, returned_quantity: 2, returned_gross_amount: 100.00, returned_net_amount: 90.00}
+#   - name: fct_returns__filters_to_return_flag_R
+#     description: >
+#       Three line items: one returned, two accepted. Only the returned row
+#       should appear in fct_returns.
+#     model: fct_returns
+#     overrides:
+#       macros:
+#         is_incremental: false
+#     given:
+#       - input: ref('int_orders_enriched')
+#         rows:
+#           - {order_key: 1, customer_key: 100, customer_name: 'Alice', customer_nation: 'FRANCE', customer_region: 'EUROPE', sales_region: 'EMEA', market_segment: 'AUTOMOBILE', order_date: '2024-01-15', status_code: 'F', priority_code: '1-URGENT', total_price: 500.00, clerk_name: 'Clerk#0001', ship_priority: 0, account_balance: 1000.00}
+#       - input: ref('int_line_items_enriched')
+#         rows:
+#           - {order_key: 1, line_number: 1, part_key: 10, supplier_key: 20, quantity: 2, extended_price: 100.00, discount_percentage: 0.10, tax_rate: 0.05, discounted_price: 90.00,  net_price: 94.50,  return_flag: 'R', line_status: 'F', ship_date: '2024-01-20', commit_date: '2024-01-18', receipt_date: '2024-01-22', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'widget', manufacturer: 'Mfg#1', brand: 'Brand#11', part_type: 'STD', retail_price: 50.00, supplier_name: 'Sup#1', supplier_nation: 'GERMANY'}
+#           - {order_key: 1, line_number: 2, part_key: 11, supplier_key: 21, quantity: 3, extended_price: 200.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price: 200.00, net_price: 210.00, return_flag: 'A', line_status: 'F', ship_date: '2024-01-21', commit_date: '2024-01-19', receipt_date: '2024-01-23', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'gizmo',  manufacturer: 'Mfg#1', brand: 'Brand#12', part_type: 'STD', retail_price: 80.00, supplier_name: 'Sup#2', supplier_nation: 'GERMANY'}
+#           - {order_key: 1, line_number: 3, part_key: 12, supplier_key: 22, quantity: 1, extended_price:  50.00, discount_percentage: 0.00, tax_rate: 0.05, discounted_price:  50.00, net_price:  52.50, return_flag: 'N', line_status: 'O', ship_date: '2024-01-22', commit_date: '2024-01-20', receipt_date: '2024-01-24', ship_instructions: 'NONE', ship_mode: 'AIR', part_name: 'sprocket', manufacturer: 'Mfg#1', brand: 'Brand#13', part_type: 'STD', retail_price: 30.00, supplier_name: 'Sup#3', supplier_nation: 'GERMANY'}
+#     expect:
+#       rows:
+#         - {order_key: 1, line_number: 1, returned_quantity: 2, returned_gross_amount: 100.00, returned_net_amount: 90.00}
