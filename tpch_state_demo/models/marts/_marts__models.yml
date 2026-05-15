@@ -21,7 +21,8 @@ models:
         description: '{{ doc("order_status_code") }}'
         tests:
           - accepted_values:
-              values: ['O', 'F', 'P']
+              arguments:
+                values: ['O', 'F', 'P']
       - name: sales_region
         description: Internal go-to-market region from the nation_region_overrides seed.
         tests:
@@ -213,7 +214,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+              arguments:
+                values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
       - name: order_year
         tests:
           - not_null

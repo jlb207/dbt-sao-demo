@@ -23,7 +23,8 @@ seeds:
         tests:
           - not_null
           - accepted_values:
-              values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+              arguments:
+                values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
 
   - name: fx_rates
     description: Static reference rates for converting local currency to USD.
@@ -59,5 +60,6 @@ seeds:
         tests:
           - not_null
           - accepted_values:
-              values: [1, 2, 3, 4]
-              quote: false
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false

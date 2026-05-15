@@ -27,13 +27,15 @@ models:
         tests:
           - not_null
           - relationships:
-              to: ref('stg_tpch__customers')
-              field: customer_key
+              arguments:
+                to: ref('stg_tpch__customers')
+                field: customer_key
       - name: status_code
         description: "Order status: O (open), F (fulfilled), P (partial)."
         tests:
           - accepted_values:
-              values: ['O', 'F', 'P']
+              arguments:
+                values: ['O', 'F', 'P']
 
   - name: stg_tpch__line_items
     description: >
@@ -52,7 +54,8 @@ models:
         description: "Return status: R (returned), A (accepted), N (not returned)."
         tests:
           - accepted_values:
-              values: ['R', 'A', 'N']
+              arguments:
+                values: ['R', 'A', 'N']
 
   - name: stg_tpch__suppliers
     description: Cleaned and renamed supplier master records.

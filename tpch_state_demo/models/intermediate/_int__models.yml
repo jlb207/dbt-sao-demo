@@ -25,7 +25,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+              arguments:
+                values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
 
   - name: int_line_items_enriched
     description: >
