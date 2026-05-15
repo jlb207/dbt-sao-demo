@@ -38,9 +38,9 @@ with order_items as (
     {% if is_incremental() %}
         -- Re-process the last full month plus anything newer to handle
         -- late-arriving data without a full refresh.
-        where order_date >= dateadd(
-            'month', -1,
-            date_trunc('month', (select max(order_date) from {{ this }}))
+        where order_date >= (
+            select dateadd('month', -1, date_trunc('month', max(order_date)))
+            from {{ this }}
         )
     {% endif %}
 

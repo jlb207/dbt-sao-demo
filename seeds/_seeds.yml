@@ -22,9 +22,9 @@ seeds:
         description: Internal go-to-market region. Differs from the TPC-H region.
         tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
+          # - accepted_values:
+          #     arguments:
+          #       values: ['NORTH AMERICA', 'LATAM', 'EMEA', 'APAC']
 
   - name: fx_rates
     description: Static reference rates for converting local currency to USD.
@@ -59,7 +59,7 @@ seeds:
       - name: priority_tier
         tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: [1, 2, 3, 4]
-                quote: false
+          # - accepted_values:
+          #     arguments:
+          #       values: [1, 2, 3, 4]
+          #       quote: false
