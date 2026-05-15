@@ -32,10 +32,10 @@ models:
                 field: customer_key
       - name: status_code
         description: "Order status: O (open), F (fulfilled), P (partial)."
-        tests:
-          # - accepted_values:
-          #     arguments:
-          #       values: ['O', 'F', 'P']
+        # tests:
+        #   - accepted_values:
+        #       arguments:
+        #         values: ['O', 'F', 'P']
 
   - name: stg_tpch__line_items
     description: >
@@ -52,10 +52,10 @@ models:
           - not_null
       - name: return_flag
         description: "Return status: R (returned), A (accepted), N (not returned)."
-        tests:
-          # - accepted_values:
-          #     arguments:
-          #       values: ['R', 'A', 'N']
+        # tests:
+        #   - accepted_values:
+        #       arguments:
+        #         values: ['R', 'A', 'N']
 
   - name: stg_tpch__suppliers
     description: Cleaned and renamed supplier master records.
