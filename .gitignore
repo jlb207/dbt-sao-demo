@@ -5,3 +5,4 @@ logs/
 .DS_Store
 *.duckdb
 *.duckdb.wal
+dbt_internal_packages/
