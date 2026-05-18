@@ -45,6 +45,7 @@ models:
       +tags: ['staging']
     intermediate:
       +materialized: view
+      +bind: false
       +schema: intermediate
       +tags: ['intermediate']
     marts:
