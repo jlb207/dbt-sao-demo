@@ -110,7 +110,7 @@ After any of the four triggers:
 - Every unrelated staging, intermediate, mart, seed, and snapshot node shows as **reused**.
 - A baseline Full Build with no triggered change rebuilds nothing — every node is reused.
 
-In a project this size the time savings are modest — the demo's value is the mechanism. At production scale, the same reused/rebuilt logic applies to a much larger graph, where any given change typically leaves the majority of nodes untouched.
+In a project this size the time savings are modest — the demo's value is the mechanism. At production scale, the same reused/rebuilt logic applies to a much larger graph.
 
 ### Sample cascades to expect (paths 1 and 2)
 
