@@ -1,25 +1,20 @@
 # tpch_state_demo
 
-A dbt project built on Redshift's TPC-H sample data, designed to run on the
-**dbt Fusion engine** via the **dbt platform**, and structured to demonstrate
-**state-aware orchestration** to a prospective customer. Changes anywhere in
-the project produce a visible, meaningful cascade of downstream rebuilds —
-making state-aware run behavior easy to show in run logs and lineage.
+A dbt project on Redshift's TPC-H sample data, built to demonstrate **state-aware orchestration (SAO)** on the **dbt Fusion engine** via the **dbt platform**. The environment is pre-configured for evaluators — your only job is to trigger changes and observe how the Full Build job reuses vs. rebuilds nodes.
 
-This project is intentionally "kitchen sink" — it exercises seeds, snapshots,
-macros, custom tests, unit tests, analyses, exposures, doc blocks, hooks,
-selectors, and source freshness — so the demo can pivot from "what does
-state-aware do?" into "how do all the dbt project surfaces compose?"
+The project exercises seeds, snapshots, macros, tests, exposures, and source freshness, so you can also use it to see how the full dbt surface composes around SAO.
 
 ---
 
-## Prerequisites
+## Getting started
 
-- A Redshift cluster with the TPC-H sample data loaded (schema: `tpch`)
-- A dbt platform account with the Redshift connection configured
-- A development and a production environment in the dbt platform, with the
-  Fusion engine selected
-- This repository connected to the dbt platform as a project
+You've been invited to a dbt platform account with Developer access to this project.
+
+1. **Accept the dbt platform invite** from your email.
+2. **Open this project** in the dbt platform.
+3. **Open the IDE.** If prompted for development credentials, enter the shared Redshift username and password your account contact provided. If you're not prompted, the connection is already configured — skip ahead.
+
+You can now edit code in the IDE, run macros from the IDE terminal, and trigger the **Full Build** job from the Jobs page. Everything else — connection, environments, source copies, and the job — is set up for you.
 
 ---
 
@@ -70,45 +65,15 @@ Exposures (`finance_executive_dashboard`, `ops_returns_alert`, `customer_churn_m
 
 ---
 
-## One-time setup
-
-### 1. Point sources at your Redshift database
-
-Open `models/staging/_tpch__sources.yml` and set `database` to your Redshift database name (default is `dev`).
-
-### 2. Install packages
-
-```bash
-dbt deps
-```
-
-### 3. Load seeds and snapshots
-
-```bash
-dbt seed
-dbt snapshot
-```
-
-### 4. First full build
-
-```bash
-dbt build
-```
-
-This builds every model, runs every test, generates the manifest, and seeds the artifact baseline that the state-aware job will defer to.
-
----
-
 ## Evaluating state-aware orchestration
 
 This section is the entry point for prospects evaluating SAO. The environment is pre-configured — you trigger changes and observe what the **Full Build** job reuses vs. rebuilds.
 
-### What's already set up for you
+### The Full Build job
 
-- Redshift connection, dev + prod environments, baseline build, and source copies.
-- One prod job in the dbt platform: **Full Build** — runs `dbt build` (and `dbt source freshness`). On Fusion, this command is state-aware: it compares the current state against the previous run's artifacts and shows each node as either **reused** (output kept from the prior run) or **rebuilt** (modified or downstream of fresher sources).
+`dbt build` (and `dbt source freshness`) runs as a single prod job called **Full Build**. On Fusion, this command is state-aware: it compares the current state against the previous run's artifacts and shows each node as either **reused** (output kept from the prior run) or **rebuilt** (modified or downstream of fresher sources).
 
-No warehouse configuration is needed. The macros below and the Full Build job are the only interface with the data.
+The macros below and the Full Build job are your only interface with the data.
 
 ### Two source-freshness modes are live
 
@@ -156,38 +121,9 @@ In a project this size the time savings are modest — the demo's value is the m
 
 ---
 
-## Selector reference
+## Tests and selectors
 
-`selectors.yml` defines named selectors used by jobs and the IDE:
-
-| Selector | Use |
-|---|---|
-| `state_changed` | Main state-aware job — modified + downstream |
-| `finance_only` | All finance-tagged models + parents |
-| `marts_and_downstream` | Marts layer plus exposures |
-| `ci_slim` | State-aware minus snapshots and heavy-tagged models |
-| `nightly_full_refresh` | Full rebuild target for the nightly batch |
-
-Invoke a selector with:
-
-```bash
-dbt build --selector state_changed
-dbt ls   --selector finance_only
-```
-
----
-
-## Tests
-
-- **Generic tests** — `unique`, `not_null`, `accepted_values`, `relationships` (from dbt core) + `not_negative`, `valid_currency_code` (custom, in `tests/generic/`).
-- **Singular tests** — `tests/assert_fct_orders_gross_gte_net.sql`, `tests/assert_agg_revenue_months_complete.sql`.
-- **Unit tests** — `models/marts/_marts__unit_tests.yml` covers `fct_orders` aggregation and `fct_returns` filtering. Unit tests run against mocked inputs and do not require the warehouse.
-
-```bash
-dbt test                          # all tests
-dbt test --select fct_orders      # node-scoped
-dbt test --selector state_changed # state-aware tests only
-```
+The Full Build job runs every test in the project (generic, singular, and unit). Tests on reused nodes are skipped along with the node itself. Named selectors live in `selectors.yml` (`finance_only`, `marts_and_downstream`, `ci_slim`, `nightly_full_refresh`) if you want to scope ad-hoc runs from the IDE, but no selector is required for the demo.
 
 ---
 
