@@ -45,7 +45,7 @@ customer_geography as (
         nations.nation_name                                  as customer_nation,
         regions.region_name                                  as customer_region,
         coalesce(sales_region_overrides.sales_region,
-                 regions.region_name)                        as sales_region
+                 regions.region_name)                        as sales_region,
         'test' as                                            as test         
 
     from customers
