@@ -21,7 +21,19 @@
 -- when using `--select state:modified+`. This is the model to point to when
 -- showing the prospect the full cascade in the run logs.
 
-with order_items as (
+with
+{% if is_incremental() %}
+-- Re-process the last full month plus anything newer to handle
+-- late-arriving data without a full refresh. Isolating the aggregate in a CTE
+-- avoids Redshift's rejection of aggregates wrapped in scalar functions inside
+-- a WHERE-position subquery.
+incremental_cutoff as (
+    select dateadd('month', -1, date_trunc('month', max(order_date))) as cutoff_date
+    from {{ this }}
+),
+{% endif %}
+
+order_items as (
 
     select
         order_key,
@@ -36,12 +48,7 @@ with order_items as (
     from {{ ref('fct_order_items') }}
 
     {% if is_incremental() %}
-        -- Re-process the last full month plus anything newer to handle
-        -- late-arriving data without a full refresh.
-        where order_date >= (
-            select dateadd('month', -1, date_trunc('month', max(order_date)))
-            from {{ this }}
-        )
+        where order_date >= (select cutoff_date from incremental_cutoff)
     {% endif %}
 
 ),

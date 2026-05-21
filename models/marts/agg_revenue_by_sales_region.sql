@@ -19,7 +19,18 @@
 -- Editing the seed cascades all the way to this model under
 -- `dbt build --select state:modified+`.
 
-with order_items as (
+with
+{% if is_incremental() %}
+-- Isolate the aggregate in a CTE so Redshift doesn't reject it inside a
+-- WHERE-position subquery (the dateadd/date_trunc wrap around max() trips
+-- the planner with "aggregates not allowed in WHERE clause").
+incremental_cutoff as (
+    select dateadd('month', -1, date_trunc('month', max(order_date))) as cutoff_date
+    from {{ this }}
+),
+{% endif %}
+
+order_items as (
 
     select
         order_key,
@@ -34,10 +45,7 @@ with order_items as (
     from {{ ref('fct_order_items') }}
 
     {% if is_incremental() %}
-        where order_date >= (
-            select dateadd('month', -1, date_trunc('month', max(order_date)))
-            from {{ this }}
-        )
+        where order_date >= (select cutoff_date from incremental_cutoff)
     {% endif %}
 
 ),
