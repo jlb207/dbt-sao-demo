@@ -23,12 +23,18 @@
 
 with
 {% if is_incremental() %}
--- Re-process the last full month plus anything newer to handle
--- late-arriving data without a full refresh. Isolating the aggregate in a CTE
--- avoids Redshift's rejection of aggregates wrapped in scalar functions inside
--- a WHERE-position subquery.
+-- The target table only stores order_year + order_month (not order_date),
+-- so we reconstruct the last month present (year*100+month gives a sortable
+-- composite) and back off one month as a late-arrival buffer. Computed in a
+-- CTE so Redshift doesn't reject the aggregate inside a WHERE-position
+-- subquery.
 incremental_cutoff as (
-    select dateadd('month', -1, date_trunc('month', max(order_date))) as cutoff_date
+    select
+        dateadd(
+            'month',
+            -1,
+            to_date(max(order_year * 100 + order_month)::varchar, 'YYYYMM')
+        ) as cutoff_date
     from {{ this }}
 ),
 {% endif %}
