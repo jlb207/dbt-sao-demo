@@ -33,10 +33,15 @@ vars:
   # ---------------------------------------------------------------------------
   # Raw source scaffolding for the metadata-freshness demo.
   #
-  # Source tables are copied out of Redshift's read-only sample_data_dev into
-  # a user-owned schema so SVV_TABLE_INFO.modified is populated and dbt source
-  # freshness can read it via get_relation_last_modified (the fallback used
-  # when a source has no loaded_at_field).
+  # Source tables are copied out of Redshift's read-only sample_data_dev.tpch
+  # into a user-owned schema (sample_data_dev.tpch_raw) so SVV_TABLE_INFO.modified
+  # is populated and dbt source freshness can read it via
+  # get_relation_last_modified — the fallback used when a source has no
+  # loaded_at_field.
+  #
+  # raw_source_database is pinned so dev and prod both read sources from the
+  # same physical location. Prod's target.database is `analytics` (where
+  # models write); sources stay in `sample_data_dev` regardless.
   #
   # Override raw_source_tables here to change the default set the create /
   # touch macros operate on. The macros also accept an explicit tables arg:
@@ -44,6 +49,7 @@ vars:
   # ---------------------------------------------------------------------------
   raw_source_external_database: sample_data_dev
   raw_source_external_schema:   tpch
+  raw_source_database:          sample_data_dev
   raw_source_schema:            tpch_raw
   raw_source_tables:
     - customer

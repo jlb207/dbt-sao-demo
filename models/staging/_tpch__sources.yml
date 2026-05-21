@@ -10,8 +10,8 @@ sources:
       freshness reads through get_relation_last_modified when a table
       has no loaded_at_field — enabling state-aware orchestration on
       metadata.
-    database: "{{ var('raw_source_database', target.database) }}"
-    schema: "{{ var('raw_source_schema', 'tpch_raw') }}"
+    database: "{{ var('raw_source_database') }}"
+    schema: "{{ var('raw_source_schema') }}"
     # No loaded_at_field on the six reference tables below, so they fall
     # back to metadata-based freshness. orders and lineitem keep their
     # explicit loaded_at_field.
