@@ -46,12 +46,24 @@
       {% do run_query("drop table if exists " ~ target_db ~ "." ~ target_schema ~ "." ~ t) %}
     {% endif %}
 
-    {% do log("Creating " ~ target_db ~ "." ~ target_schema ~ "." ~ t ~ " from " ~ source_db ~ "." ~ source_schema ~ "." ~ t, info=true) %}
-    {% set create_sql %}
-      create table if not exists {{ target_db }}.{{ target_schema }}.{{ t }} as
-      select * from {{ source_db }}.{{ source_schema }}.{{ t }}
-    {% endset %}
-    {% do run_query(create_sql) %}
+    {#-
+      Redshift does not support CREATE TABLE IF NOT EXISTS ... AS SELECT
+      (CTAS + IF NOT EXISTS is a PostgreSQL 9.5+ feature; Redshift forked
+      from PG 8.0.2). Check existence explicitly via adapter.get_relation
+      and skip when the table is already there.
+    -#}
+    {% set existing = adapter.get_relation(database=target_db, schema=target_schema, identifier=t) %}
+
+    {% if existing is none %}
+      {% do log("Creating " ~ target_db ~ "." ~ target_schema ~ "." ~ t ~ " from " ~ source_db ~ "." ~ source_schema ~ "." ~ t, info=true) %}
+      {% set create_sql %}
+        create table {{ target_db }}.{{ target_schema }}.{{ t }} as
+        select * from {{ source_db }}.{{ source_schema }}.{{ t }}
+      {% endset %}
+      {% do run_query(create_sql) %}
+    {% else %}
+      {% do log("Skipping " ~ target_db ~ "." ~ target_schema ~ "." ~ t ~ " — already exists. Pass full_refresh=true to recreate.", info=true) %}
+    {% endif %}
   {% endfor %}
 
   {% do log("Done. Next: run `dbt source freshness` to confirm metadata-based freshness produces a result for each copied table.", info=true) %}
