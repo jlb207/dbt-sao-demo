@@ -99,86 +99,60 @@ This builds every model, runs every test, generates the manifest, and seeds the 
 
 ---
 
-## dbt platform job configuration
+## Evaluating state-aware orchestration
 
-#### Job 1 — Production Full Build
+This section is the entry point for prospects evaluating SAO. The environment is pre-configured — you trigger changes and observe what the **Full Build** job reuses vs. rebuilds.
 
-| Setting | Value |
-|---|---|
-| Name | `Production — Full Build` |
-| Environment | Production |
-| Commands | `dbt build` |
-| Schedule | Nightly (or run manually to seed the baseline) |
-| Generate docs | Yes |
-| **Generate artifacts** | **Yes** (this is the state baseline) |
+### What's already set up for you
 
-#### Job 2 — State-Aware Incremental Run
+- Redshift connection, dev + prod environments, baseline build, and source copies.
+- One prod job in the dbt platform: **Full Build** — runs `dbt build` (and `dbt source freshness`). On Fusion, this command is state-aware: it compares the current state against the previous run's artifacts and shows each node as either **reused** (output kept from the prior run) or **rebuilt** (modified or downstream of fresher sources).
 
-| Setting | Value |
-|---|---|
-| Name | `State-Aware — Modified Only` |
-| Environment | Production (or a separate CI environment) |
-| Commands | `dbt build --selector state_changed` |
-| **Defer to** | `Production — Full Build` (under Advanced → Artifacts) |
-| Schedule | On-demand or triggered by a Git push |
+No warehouse configuration is needed. The macros below and the Full Build job are the only interface with the data.
 
-The `state_changed` selector lives in `selectors.yml` and resolves to "everything modified vs. the deferred artifact, plus all downstream nodes."
+### Two source-freshness modes are live
 
----
+- `orders` and `lineitem` use an explicit `loaded_at` column.
+- The other six sources (`customer`, `nation`, `part`, `partsupp`, `region`, `supplier`) rely on Fusion's warehouse-metadata fallback via `get_relation_last_modified`.
 
-## Demo walkthrough — the rich path
+### Four ways to trigger a cascade
 
-Pick the change that best matches the story you're telling. Each one produces a different shape of cascade.
+| # | Change | Trigger | Cascade shown in Full Build log |
+|---|---|---|---|
+| 1 | Edit any `.sql` model in the dbt platform IDE and commit | Run **Full Build** | Modified node + descendants are *rebuilt*; everything else is *reused* |
+| 2 | Edit `seeds/nation_region_overrides.csv` in the IDE and commit | Run **Full Build** | Widest cascade — through both terminal aggregates |
+| 3 | In the IDE terminal: `dbt run-operation touch_raw_sources --args '{tables: [customer]}'` | Run **Full Build** | Chain downstream of `customer` is *rebuilt* (warehouse-metadata freshness path) |
+| 4 | In the IDE terminal: `dbt run-operation insert_demo_source_row --args '{table: orders}'` | Run **Full Build** | Chain downstream of `orders` is *rebuilt* (loaded_at_field freshness path) |
 
-### Path A — Edit a seed (widest cascade)
+Paths 1 and 2 demonstrate code/seed changes. Paths 3 and 4 demonstrate upstream-data changes — path 3 exercises the lighter-touch warehouse-metadata integration, path 4 exercises the conventional `loaded_at` column integration most ELT pipelines already populate.
 
-Edit `seeds/nation_region_overrides.csv` and move one country to a different `sales_region` (e.g. UNITED KINGDOM from EMEA to NORTH AMERICA).
+### Macros (the only data-manipulation interface)
 
-```bash
-dbt build --selector state_changed
-```
+Run from the dbt platform IDE terminal.
 
-Cascade:
+| Macro | Purpose | Required args | Optional args |
+|---|---|---|---|
+| `touch_raw_sources` | Simulate an upstream reload on a metadata-freshness source | `tables: [customer\|nation\|part\|partsupp\|region\|supplier]` | `method: truncate_reload \| noop_insert \| recreate` |
+| `insert_demo_source_row` | Insert a new unique row with `loaded_at = now()` into a loaded_at_field source | `table: orders \| lineitem` | `count: N` |
 
-1. `nation_region_overrides` (seed)
-2. `int_orders_enriched`
-3. `fct_orders`, `fct_order_items`, `fct_returns`, `dim_customers`, `dim_suppliers`
-4. `agg_revenue_by_nation`, `agg_revenue_by_sales_region`
-5. Downstream exposures flagged stale in the dbt platform lineage view
+Each macro logs what it did and prompts the next step. A third macro, `create_raw_sources`, performed the one-time setup that's already been done.
 
-Out of ~22 resources, 8–10 rebuild. The rest don't.
+### What to look for in the Full Build run log
 
-### Path B — Edit revenue logic (the original demo)
+After any of the four triggers:
 
-Edit `models/intermediate/int_line_items_enriched.sql` — change the `net_price` formula. State-aware rebuilds:
+- The modified/fresher node and its descendants show as **rebuilt**.
+- Every unrelated staging, intermediate, mart, seed, and snapshot node shows as **reused**.
+- A baseline Full Build with no triggered change rebuilds nothing — every node is reused.
 
-1. `int_line_items_enriched`
-2. `fct_order_items`, `fct_returns`
-3. `agg_revenue_by_nation`, `agg_revenue_by_sales_region`
+In a project this size the time savings are modest — the demo's value is the mechanism. At production scale, the same reused/rebuilt logic applies to a much larger graph, where any given change typically leaves the majority of nodes untouched.
 
-`fct_orders`, all staging models, both dimensions, and `dim_dates` do NOT rebuild.
+### Sample cascades to expect (paths 1 and 2)
 
-### Path C — Edit a staging column rename
-
-Edit `models/staging/stg_tpch__customers.sql`. Cascade is the customer chain only — `agg_revenue_by_sales_region` rebuilds (joins via int_orders_enriched), but `fct_order_items` and `agg_revenue_by_nation` do not.
-
-### Path D — Add a new column to dim_dates
-
-State-aware rebuilds: just `dim_dates`. Nothing else uses it directly — the smallest possible cascade.
-
----
-
-## What didn't run (for the prospect)
-
-After triggering any state-aware run, scroll the run logs and point out what stayed green/skipped:
-
-- All unmodified staging models
-- The other intermediate model
-- All marts not downstream of the change
-- Snapshots — only rebuild on `dbt snapshot`
-- Seeds — only rebuild on `dbt seed`
-
-In a real customer project with 200–500 models, this pattern reduces CI/CD run time from 30–60 minutes to under 5 minutes for typical day-to-day changes.
+- **Edit `seeds/nation_region_overrides.csv`** → `nation_region_overrides` (seed) → `int_orders_enriched` → `fct_orders`, `fct_order_items`, `fct_returns`, `dim_customers`, `dim_suppliers` → `agg_revenue_by_nation`, `agg_revenue_by_sales_region`. Widest cascade.
+- **Edit `models/intermediate/int_line_items_enriched.sql`** → `int_line_items_enriched` → `fct_order_items`, `fct_returns` → both aggregates. `fct_orders`, all staging, both dimensions, and `dim_dates` are reused.
+- **Edit `models/staging/stg_tpch__customers.sql`** → customer chain only. `agg_revenue_by_sales_region` rebuilds (via `int_orders_enriched`); `fct_order_items` and `agg_revenue_by_nation` are reused.
+- **Add a column to `models/marts/dim_dates.sql`** → just `dim_dates` rebuilds. Smallest possible cascade.
 
 ---
 
