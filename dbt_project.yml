@@ -66,6 +66,11 @@ on-run-end:
 
 models:
   tpch_state_demo:
+    # Prod connects to sample_data_dev as its default database so Fusion's
+    # get_relation_last_modified can see source metadata for tpch_raw.
+    # Models still write to analytics in prod; dev keeps writing to whatever
+    # database the dev environment connects to.
+    +database: "{{ 'analytics' if target.name == 'prod' else target.database }}"
     +persist_docs:
       relation: true
       columns: true
