@@ -21,11 +21,18 @@
 
 with
 {% if is_incremental() %}
--- Isolate the aggregate in a CTE so Redshift doesn't reject it inside a
--- WHERE-position subquery (the dateadd/date_trunc wrap around max() trips
--- the planner with "aggregates not allowed in WHERE clause").
+-- The target table only stores order_year + order_month (not order_date),
+-- so we reconstruct the last month present (year*100+month gives a sortable
+-- composite) and back off one month as a late-arrival buffer. Computed in a
+-- CTE so Redshift doesn't reject the aggregate inside a WHERE-position
+-- subquery.
 incremental_cutoff as (
-    select dateadd('month', -1, date_trunc('month', max(order_date))) as cutoff_date
+    select
+        dateadd(
+            'month',
+            -1,
+            to_date(max(order_year * 100 + order_month)::varchar, 'YYYYMM')
+        ) as cutoff_date
     from {{ this }}
 ),
 {% endif %}
