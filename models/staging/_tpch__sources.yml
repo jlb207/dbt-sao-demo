@@ -3,14 +3,18 @@ version: 2
 sources:
   - name: tpch
     description: >
-      TPC-H benchmark dataset loaded as Redshift sample data.
-      Schema is 'tpch' within your Redshift database.
-    database: sample_data_dev
-    schema: tpch
-    # Source freshness: TPC-H sample data is static, so these thresholds are
-    # illustrative. In a real project the warn_after / error_after values would
-    # match the upstream loader SLA. dbt source freshness runs in its own job
-    # in the dbt platform and is independent of model state.
+      TPC-H benchmark dataset, copied out of Redshift's read-only
+      sample_data_dev into a user-owned schema via the
+      create_raw_sources macro. Owning the tables ourselves means
+      Redshift populates SVV_TABLE_INFO.modified, which dbt source
+      freshness reads through get_relation_last_modified when a table
+      has no loaded_at_field — enabling state-aware orchestration on
+      metadata.
+    database: "{{ var('raw_source_database', target.database) }}"
+    schema: "{{ var('raw_source_schema', 'tpch_raw') }}"
+    # No loaded_at_field on the six reference tables below, so they fall
+    # back to metadata-based freshness. orders and lineitem keep their
+    # explicit loaded_at_field.
     config:
       freshness:
         warn_after: {count: 24, period: hour}
