@@ -64,11 +64,11 @@ sources:
         description: >
           Line item detail for each order. The most granular fact table in TPC-H.
           Each order can have multiple line items.
-        config:
-          loaded_at_field: l_shipdate
-          freshness:
-            warn_after: {count: 48, period: hour}
-            error_after: {count: 168, period: hour}
+        # config:
+        #   loaded_at_field: l_shipdate
+        #   freshness:
+        #     warn_after: {count: 48, period: hour}
+        #     error_after: {count: 168, period: hour}
         columns:
           - name: l_orderkey
             description: Foreign key to orders.
